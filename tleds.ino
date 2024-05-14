@@ -45,7 +45,8 @@ boolean sdcard=false;
 
 arduinoFFT FFT = arduinoFFT();
 
-#define PINMICRO 36
+int pinadc=36;
+int pindata=16;
 
 ///////////////////////////
 //////////////////////////
@@ -848,7 +849,7 @@ void espectrometro2(){
             int ini=millis();
             
             for(int i=0;i<samples;i++){
-                vReal[i] = analogRead(PINMICRO);
+                vReal[i] = analogRead(pinadc);
                 vImag[i] = 0;
                 delayMicroseconds(100);
                 if(siguiente){ return;} 
@@ -955,7 +956,7 @@ void espectrometro(){
             int ini=millis();
             
             for(int i=0;i<samples;i++){
-                vReal[i] = analogRead(PINMICRO);
+                vReal[i] = analogRead(pinadc);
                 vImag[i] = 0;
                 delayMicroseconds(100);
                 if(siguiente){ return;} 
@@ -1341,6 +1342,16 @@ void webconfig(){
       else{   s+="<tr><td align=center><b>ROTATE :&nbsp;&nbsp;</b><input type='checkbox' id='rotate' checked/></td></tr>"; }
       
       client.print(s);
+
+      s=F("<tr><td><br></td></tr>");client.print(s);
+      s+="<tr><td align=center><b>PIN DATA :&nbsp;&nbsp;</b><input type='text' id='pindata' size='5' value='";
+      s+=pindata;
+      s+="'/></td></tr>";      
+      s+="<tr><td align=center><b>PIN ADC :&nbsp;&nbsp;</b><input type='text' id='pinadc' size='5' value='";
+      s+=pinadc;
+      s+="'/></td></tr>";
+      client.print(s);
+      
 
       s=F("<tr><td><br><br></td></tr>");client.print(s);
 
@@ -2029,7 +2040,8 @@ void setup(){
 
   WiFi.softAP(ssid, password);        //Start Acces point mode
   
-  pinMode(PINMICRO,INPUT);
+  pinMode(pinadc,INPUT);
+  pinMode(pindata,OUTPUT);
 
   Serial.begin(115200);
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
