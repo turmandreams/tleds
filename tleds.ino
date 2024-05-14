@@ -56,13 +56,18 @@ SPIClass spiSD = SPIClass(VSPI);
 #include "AnimatedGIF.h"
 
 #include "ColorConverterLib.h"
+
 #include <FastLED_NeoPixel.h>
 
 #define DATA_PIN 16
+#define NUM_LEDS 4096
+#define BRIGHTNESS 50
 
 int numpixeles=256;
 
-FastLED_NeoPixel<4096, DATA_PIN, NEO_GRB> strip;      // <- FastLED NeoPixel version
+CRGB leds[NUM_LEDS];
+FastLED_NeoPixel_Variant strip(leds, NUM_LEDS);
+
 
 AnimatedGIF gif;
 
@@ -209,6 +214,50 @@ void IRAM_ATTR onTimer() {
 }
 
 
+void inicializatira(){
+
+  if(pindata==2){
+      strip.begin(FastLED.addLeds<WS2812B,2,GRB>(leds,NUM_LEDS));
+  }else if(pindata==4){
+      strip.begin(FastLED.addLeds<WS2812B,4,GRB>(leds,NUM_LEDS));
+  }else if(pindata==5){
+      strip.begin(FastLED.addLeds<WS2812B,5,GRB>(leds,NUM_LEDS));
+  }else if(pindata==12){
+      strip.begin(FastLED.addLeds<WS2812B,12,GRB>(leds,NUM_LEDS));
+  }else if(pindata==13){
+      strip.begin(FastLED.addLeds<WS2812B,13,GRB>(leds,NUM_LEDS));
+  }else if(pindata==14){
+      strip.begin(FastLED.addLeds<WS2812B,14,GRB>(leds,NUM_LEDS));
+  }else if(pindata==15){
+      strip.begin(FastLED.addLeds<WS2812B,15,GRB>(leds,NUM_LEDS));
+  }else if(pindata==16){
+      strip.begin(FastLED.addLeds<WS2812B,16,GRB>(leds,NUM_LEDS));
+  }else if(pindata==17){
+      strip.begin(FastLED.addLeds<WS2812B,17,GRB>(leds,NUM_LEDS));
+  }else if(pindata==18){
+      strip.begin(FastLED.addLeds<WS2812B,18,GRB>(leds,NUM_LEDS));
+  }else if(pindata==19){
+      strip.begin(FastLED.addLeds<WS2812B,19,GRB>(leds,NUM_LEDS));
+  }else if(pindata==21){
+      strip.begin(FastLED.addLeds<WS2812B,21,GRB>(leds,NUM_LEDS));
+  }else if(pindata==22){
+      strip.begin(FastLED.addLeds<WS2812B,22,GRB>(leds,NUM_LEDS));
+  }else if(pindata==23){
+      strip.begin(FastLED.addLeds<WS2812B,23,GRB>(leds,NUM_LEDS));
+  }else if(pindata==25){
+      strip.begin(FastLED.addLeds<WS2812B,25,GRB>(leds,NUM_LEDS));
+  }else if(pindata==26){
+      strip.begin(FastLED.addLeds<WS2812B,26,GRB>(leds,NUM_LEDS));
+  }else if(pindata==27){
+      strip.begin(FastLED.addLeds<WS2812B,27,GRB>(leds,NUM_LEDS));
+  }else if(pindata==32){
+      strip.begin(FastLED.addLeds<WS2812B,32,GRB>(leds,NUM_LEDS));
+  }else if(pindata==33){
+      strip.begin(FastLED.addLeds<WS2812B,33,GRB>(leds,NUM_LEDS));
+  }
+  
+}
+
 void tftclear(){
 
    if(pinta){ 
@@ -338,7 +387,15 @@ void analizaconfiguracion(){
      pos1=pos2;pos2=configuracion.indexOf(";",pos1+1);d = configuracion.substring(pos1+1,pos2);
      rotar=d.toInt(); 
 
-     //Serial.print(esquina);Serial.print(",");Serial.println(serpentina);
+     pos1=pos2;pos2=configuracion.indexOf(";",pos1+1);d = configuracion.substring(pos1+1,pos2);
+     pindata=d.toInt(); 
+
+     inicializatira();
+     
+     pos1=pos2;pos2=configuracion.indexOf(";",pos1+1);d = configuracion.substring(pos1+1,pos2);
+     pinadc=d.toInt(); 
+
+     //Serial.print(pindata);Serial.print(",");Serial.println(pinadc);
      
 }
 
@@ -428,7 +485,9 @@ void guardaconfiguracion(){
 
 
     archivo.close();
-    
+
+
+   
 }
 
 void cargaconfiguracion(){
@@ -1300,7 +1359,7 @@ void webprincipal(){
 void webconfig(){
 
       
-      String s=F("<html><head><style>body{background-image: linear-gradient(to right, #0799bf, #d5e7FF);font-family:'Courier New',monospace;}</style><script>function salvar(){ var datos=\"?\";datos+=document.getElementById(\"ledsx\").value+\";\";datos+=document.getElementById(\"ledsy\").value+\";\";datos+=document.getElementById(\"firstpixel\").value+\";\";if(document.getElementById(\"serpentine\").checked){datos+=\"1;\";}else{datos+=\"0;\";}if(document.getElementById(\"rotate\").checked){datos+=\"1;\";}else{datos+=\"0;\";}window.location.href=\"./\"+datos;}</script></head><body><center><table style='border-radius:20px;background-color:#FAFAFF;padding:20px'>");client.print(s);
+      String s=F("<html><head><style>body{background-image: linear-gradient(to right, #0799bf, #d5e7FF);font-family:'Courier New',monospace;}</style><script>addEventListener(\"keypress\",function(event){if (event.key===\"Enter\"){event.preventDefault();salvar();}});function salvar(){ var datos=\"?\";datos+=document.getElementById(\"ledsx\").value+\";\";datos+=document.getElementById(\"ledsy\").value+\";\";datos+=document.getElementById(\"firstpixel\").value+\";\";if(document.getElementById(\"serpentine\").checked){datos+=\"1;\";}else{datos+=\"0;\";}if(document.getElementById(\"rotate\").checked){datos+=\"1;\";}else{datos+=\"0;\";}datos+=document.getElementById(\"pindata\").value+\";\";datos+=document.getElementById(\"pinadc\").value+\";\";window.location.href=\"./\"+datos;}</script></head><body><center><table style='border-radius:20px;background-color:#FAFAFF;padding:20px'>");client.print(s);
 
       s=F("<tr><td><br></td></tr>");client.print(s);
       s=F("<tr><td><h1><a href='/' style='text-decoration:none;cursor:pointer;color:black;'>&#10094;</a>&nbsp;&nbsp;&nbsp;LED MATRIX&nbsp;&nbsp;</h1></td></tr>");client.print(s);
@@ -2070,10 +2129,12 @@ void setup(){
                     0);          /* pin task to core 0 */                  
 
 
-  strip.begin();   
+  inicializatira();
+
+  strip.setBrightness(BRIGHTNESS);   
+ 
   strip.clear();
   strip.show();
-
 
   if(pinta){
       tft.init();
