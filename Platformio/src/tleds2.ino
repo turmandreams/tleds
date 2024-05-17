@@ -2489,7 +2489,13 @@ void loop(){
 
   if(tipo[numpantalla]==1) { //GIFs
   
-      String archivos="";/*archivos+="/";*/archivos+=gifs[ngifs[numpantalla]];
+      String archivos="";
+      if(gifs[ngifs[numpantalla]].indexOf("/")==-1){
+            archivos="/";
+      }
+
+      /*archivos+="/";*/
+      archivos+=gifs[ngifs[numpantalla]];
       //Serial.println(archivos);
     
       const char * fileName = archivos.c_str();
