@@ -1,0 +1,30 @@
+[env:lolin_s2_mini]
+platform = espressif32
+framework = arduino
+board = lolin_s2_mini
+board_build.mcu = esp32s2
+board_build.f_cpu = 240000000L
+board_build.filesystem = spiffs
+build_flags = 
+	-D BOARD_HAS_PSRAM
+	-mfix-esp32-psram-cache-issue
+	-D ARDUINO_USB_CDC_ON_BOOT=1
+	-D ARDUINO_USB_MODE=0
+
+monitor_speed = 115200
+monitor_filters = send_on_enter, esp32_exception_decoder
+monitor_echo = yes
+monitor_encoding = UTF-8
+monitor_eol = CRLF
+
+
+
+lib_deps = 
+	dmadison/FastLED NeoPixel@^1.0.3
+	bitbank2/AnimatedGIF@^2.1.0
+	bodmer/TFT_eSPI@2.4.79
+	kosme/arduinoFFT@1.6.1
+
+
+build_flags =
+	-D CONFIG_PARTITION_TABLE_OFFSET=0x10000
