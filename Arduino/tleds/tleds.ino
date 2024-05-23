@@ -82,7 +82,7 @@ FastLED_NeoPixel_Variant strip(leds, NUM_LEDS);
 
 AnimatedGIF gif;
 
-String carpeta="/gif";
+String carpeta="/";
 int numerogifs=0;
 
 static File FSGifFile; // temp gif file holder
@@ -1277,6 +1277,159 @@ void battle(){
 }
 
 
+void explosion(){
+    
+    uint16_t color2=rgb565(100,100,100);
+    
+    for(int i=0;i<3;i++){
+
+        bufferscreen.fillRect(0,0,spritesizex,spritesizey,0);
+        tfttopantalla();actualizarleds();delay(200);
+
+        bufferscreen.fillRect(0,0,spritesizex,spritesizey,color2);
+        tfttopantalla();actualizarleds();delay(200);
+      
+    }
+  
+}
+
+void pong(){
+
+    int tiempo=(10000)/velocidad[numpantalla];
+    if(tiempo>1000){ tiempo=1000; }
+
+    uint16_t color2=rgb565(255,255,255);
+
+    if(pinta){  tft.fillRect(0,0,spritesizex+1,spritesizey+1,color2);  }
+
+    strip.clear();
+
+    color2=rgb565(100,100,100); 
+
+    for(int jj=0;jj<loopss[numpantalla];jj++){
+
+        bufferscreen.fillRect(0,0,spritesizex,spritesizey,0);
+        if(pinta){ bufferscreen.pushSprite(0,0); }
+
+           
+        for(int i=5;i>0;i--){
+    
+            bufferscreen.fillRect(0,0,spritesizex,spritesizey,0);
+            if(pinta){ bufferscreen.pushSprite(0,0); }
+            
+            bufferscreen.setTextColor(color2);
+            String t="";t+=i;
+            if(pantallasizey>=16){  bufferscreen.drawString(t,1,1,2);  }
+            else { bufferscreen.drawString(t,1,1,1);  }
+
+            if(pinta){ bufferscreen.pushSprite(0,0); }
+    
+            if(siguiente){ return;}
+     
+            tfttopantalla();
+            actualizarleds();
+            delay(1000);
+            
+       }
+
+        
+       int puntos1=0;
+       int puntos2=0;
+
+       bufferscreen.fillRect(0,0,spritesizex,spritesizey,0);
+       if(pinta){ bufferscreen.pushSprite(0,0); }
+
+       int py=2;
+
+       int boty=2;
+        
+       int bx=0;
+       int by=2;
+       int ax=1;
+       int ay=1;
+
+       for(int j=0;j<200;j++){
+            
+            int ini=millis();
+
+            bufferscreen.fillRect(0,0,spritesizex,spritesizey,0);
+             
+            int maximo=0;
+            for(int i=0;i<samples;i++){
+                int val = analogRead(pinadc);
+                if(val>maximo) { maximo=val; }
+                delayMicroseconds(10);
+                if(siguiente){ return;} 
+            }
+
+            //Serial.println(maximo);
+            if(maximo>1600){ 
+                py++; 
+                if(py>=pantallasizey){ py=-2; }
+            }
+
+            boty+=random(-1,2);
+
+            if(boty<0) { boty=0;}
+            else if(boty>pantallasizey-3) { boty=pantallasizey-3;}
+            
+
+            bufferscreen.fillRect(0,py,1,3,color2);  ///Pintamos jugador
+
+            bufferscreen.fillRect(pantallasizey-1,boty,1,3,color2);  ///Pintamos bot
+
+            ///Pintamos la pelota
+
+            bufferscreen.fillRect(bx,by,2,2,color2);
+
+            by+=ay;
+
+            if(by<0) { ay=-ay; } 
+            else if(by+1>=(pantallasizey-1)) { ay=-ay; } 
+
+            bx+=ax;     
+
+            
+            if(bx+2<0) { ax=-ax; puntos2++;explosion();bx=1;} 
+            else if(bx-2>=(pantallasizex-1)) { ax=-ax; puntos1++;explosion();bx=pantallasizex-2;} 
+                            
+            if((bx+1)<=1) {   ///Rebote con player         
+              
+                if((by>=py)&&(by<=py+2)){ ax=-ax; bx=1; }                              
+                if(((by+1)>=py)&&((by+1)<=py+2)){ ax=-ax; bx=1; }                              
+                
+            }
+
+            if(bx>=pantallasizex-2) {   ///Rebote con bot         
+                            
+                if((by>=boty)&&(by<=boty+2)){ ax=-ax; bx=pantallasizex-2; }                              
+                if(((by+1)>=boty)&&((by+1)<=boty+2)){ ax=-ax; bx=pantallasizex-2; }                              
+                
+            }
+            
+                                  
+            if(pinta){ bufferscreen.pushSprite(0,0); }
+            if(siguiente){ return;}
+    
+            tfttopantalla();
+            actualizarleds();
+            
+            while((millis()-ini)<tiempo) { if(siguiente){ return;} delay(1);wdt(); }                    
+               
+        }
+
+        String t="";
+
+        if(puntos1==puntos2) {  t="TIE"; }
+        else if(puntos1>puntos2) {  t="PLAYER WIN"; }
+        else { t="BOT WIN"; }
+                           
+        muestratexto(t,1,color2);    
+               
+    }
+  
+}
+
 void runescena(){
 
     int tiempo=(10000)/velocidad[numpantalla];
@@ -1684,8 +1837,13 @@ int getGifInventory(String basePath) {
 
   while( file ) {
     if(!file.isDirectory()) {
-      gifs[amount]=file.name();      
-      amount++;      
+      String archivo=file.name();
+
+      if(archivo.indexOf(".gif")!=-1){
+          gifs[amount]=file.name();      
+          amount++;      
+      }
+      
       file.close();
     }
     file = GifRootFolder.openNextFile();
@@ -1703,7 +1861,10 @@ int getGifInventory(String basePath) {
 
 int deleteGif(int pos) {
 
-    String archivo="/gif/";
+    String archivo="";
+    
+    if(gifs[pos].indexOf("/")==-1){ archivo+="/"; }
+    
     archivo+=gifs[pos];      
 
     Serial.println("Vamos a borrar");
@@ -1767,15 +1928,15 @@ void webprincipal(){
       }
       client.print(s);   
       
-       s=F("</select>\");\n\ndocument.getElementById(\"imagentexto\"+num).appendChild(codigo);\n}\n\n\nfunction eliminarefecto(num){\n\n\n\nfor(i=num;i<numefectos;i++){\n\nif(i==numefectos){ break; }\n\n\nif(i!=1){document.getElementById(\"transicion\"+(i-1)).value=document.getElementById(\"transicion\"+i).value;  }\n\ndocument.getElementById(\"seleccion\"+i).value=document.getElementById(\"seleccion\"+(i+1)).value;\n\n\nactivardesactivar(i);\n\n\nvar imagen=document.getElementById(\"gifs\"+(i+1));\nvar texto=document.getElementById(\"texto\"+(i+1));\n\nif(imagen!=null) { document.getElementById(\"gifs\"+i).value=imagen.value; }\n\nif(texto!=null) {document.getElementById(\"texto\"+i).value=texto.value; }\n\ndocument.getElementById(\"velocidad\"+i).value=document.getElementById(\"velocidad\"+(i+1)).value;\ndocument.getElementById(\"tvelocidad\"+i).value=document.getElementById(\"tvelocidad\"+(i+1)).value;\n\ndocument.getElementById(\"loops\"+i).value=document.getElementById(\"loops\"+(i+1)).value;\ndocument.getElementById(\"tloops\"+i).value=document.getElementById(\"tloops\"+(i+1)).value;\n\ndocument.getElementById(\"tolerancia\"+i).value=document.getElementById(\"tolerancia\"+(i+1)).value;\ndocument.getElementById(\"ttolerancia\"+i).value=document.getElementById(\"ttolerancia\"+(i+1)).value;\n\ndocument.getElementById(\"brillo\"+i).value=document.getElementById(\"brillo\"+(i+1)).value;\ndocument.getElementById(\"tbrillo\"+i).value=document.getElementById(\"tbrillo\"+(i+1)).value;\n\ndocument.getElementById(\"saturacion\"+i).value=document.getElementById(\"saturacion\"+(i+1)).value;\ndocument.getElementById(\"tsaturacion\"+i).value=document.getElementById(\"tsaturacion\"+(i+1)).value;\n\ndocument.getElementById(\"rojo\"+i).value=document.getElementById(\"rojo\"+(i+1)).value;\ndocument.getElementById(\"trojo\"+i).value=document.getElementById(\"trojo\"+(i+1))");client.print(s);
+      s=F("</select>\");\n\ndocument.getElementById(\"imagentexto\"+num).appendChild(codigo);\n}\n\n\nfunction eliminarefecto(num){\n\n\n\nfor(i=num;i<numefectos;i++){\n\nif(i==numefectos){ break; }\n\n\nif(i!=1){document.getElementById(\"transicion\"+(i-1)).value=document.getElementById(\"transicion\"+i).value;  }\n\ndocument.getElementById(\"seleccion\"+i).value=document.getElementById(\"seleccion\"+(i+1)).value;\n\n\nactivardesactivar(i);\n\n\nvar imagen=document.getElementById(\"gifs\"+(i+1));\nvar texto=document.getElementById(\"texto\"+(i+1));\n\nif(imagen!=null) { document.getElementById(\"gifs\"+i).value=imagen.value; }\n\nif(texto!=null) {document.getElementById(\"texto\"+i).value=texto.value; }\n\ndocument.getElementById(\"velocidad\"+i).value=document.getElementById(\"velocidad\"+(i+1)).value;\ndocument.getElementById(\"tvelocidad\"+i).value=document.getElementById(\"tvelocidad\"+(i+1)).value;\n\ndocument.getElementById(\"loops\"+i).value=document.getElementById(\"loops\"+(i+1)).value;\ndocument.getElementById(\"tloops\"+i).value=document.getElementById(\"tloops\"+(i+1)).value;\n\ndocument.getElementById(\"tolerancia\"+i).value=document.getElementById(\"tolerancia\"+(i+1)).value;\ndocument.getElementById(\"ttolerancia\"+i).value=document.getElementById(\"ttolerancia\"+(i+1)).value;\n\ndocument.getElementById(\"brillo\"+i).value=document.getElementById(\"brillo\"+(i+1)).value;\ndocument.getElementById(\"tbrillo\"+i).value=document.getElementById(\"tbrillo\"+(i+1)).value;\n\ndocument.getElementById(\"saturacion\"+i).value=document.getElementById(\"saturacion\"+(i+1)).value;\ndocument.getElementById(\"tsaturacion\"+i).value=document.getElementById(\"tsaturacion\"+(i+1)).value;\n\ndocument.getElementById(\"rojo\"+i).value=document.getElementById(\"rojo\"+(i+1)).value;\ndocument.getElementById(\"trojo\"+i).value=document.getElementById(\"trojo\"+(i+1))");client.print(s);
       s=F(".value;\n\ndocument.getElementById(\"verde\"+i).value=document.getElementById(\"verde\"+(i+1)).value;\ndocument.getElementById(\"tverde\"+i).value=document.getElementById(\"tverde\"+(i+1)).value;\n\ndocument.getElementById(\"azul\"+i).value=document.getElementById(\"azul\"+(i+1)).value;\ndocument.getElementById(\"tazul\"+i).value=document.getElementById(\"tazul\"+(i+1)).value;\n\n\nactualizavalor(\"azul\",i,0);\n\n\n}\n\n\n\n\n\n\nvar efecto=document.getElementById(\"dive\"+numefectos);\nefecto.remove();\n\nnumefectos--;\n\nif(numefectos!=0){\nvar tran=document.getElementById(\"divt\"+numefectos);\ntran.remove();\n}\n\n\n\n\n}\n\n\n\nfunction creartransicion() {\n\n\nconst codigo=elementFromHtml(\"<div id='divt\"+numefectos+\"'><br><table width=40% style='border-radius:20px;background-color:#FAFAFF;cursor:pointer;'><tr align=center><td width=20%></td><td width=30% style='font-size:170%;font-weight:bold'>TRANSITION \"+numefectos+\"</td><td width=50%><select id='transicion\"+numefectos+\"' style='padding:5px;background:#edf2ff'><option value='0'>NONE</option><option value='1'>FADE TO BLACK</option><option value='2'>MOVE FORWARD</option><option value='3'>MOVE BACK</option><option value='4'>LINES</option></select><td><tr></table><div>\");\n\n\ndocument.getElementById(\"efectos\").appendChild(codigo);\n\n\n        \n}\n\nfunction actualizatamano(){\n\n//alert(window.innerHeight+\" - \"+window.innerWidth);\n\nif(window.innerWidth<=1600) { tamano=100; }\nelse{ tamano=(1600*100)/window.innerWidth; }\n\n\nfor(i=1;i<=numefectos;i++){\nif(document.getElementById(\"tablaefecto\"+i)!=null){\ndocument.getElementById(\"tablaefecto\"+i).width=tamano+\"%\";\n}\n}\n\n        document.getElementById(\"tablaplay\").width=tamano+\"%\";\n\n}\n\nfunction crearefecto(num) {\n\nif(num==-1) { \nnum=numefectos; \n}\n\nif(num==numefectos){\nif(numefectos!=0){ creartransicion(); }\nnumefectos++;\nnum=numefectos; \n}\n\nconst codigo=elementFromHtml(\"<div id='dive\"+num+\"'><br><table id='tablaefecto\"+num+\"' width='60%' style='border-radius:20px;background-color:#FAFAFF;padding:20px'><tr align='left'><td witdh='10%' st");client.print(s);
-      s=F("yle='font-size:170%;font-weight:bold;cursor:pointer;' onclick='play(\"+(num-1)+\")'>SCREEN \"+num+\"</td><td witdh='20%'><select id='seleccion\"+num+\"' onchange='activardesactivar(\"+num+\")' style='padding:5px;background:#edf2ff'><option value='0'></option><option value='1'>GIF PLAYER</option><option value='2'>TEXT</option><option value='3'>DATE</option><option value='4'>TIME</option><option value='5'>MATRIX</option><option value='6'>SPECTROMETER (M)</option><option value='7'>SPECTROMETER 2 (M)</option><option value='8'>RUN (M)</option><option value='9'>RUNM (M)</option><option value='10'>BATTLE (M)</option><option value='11'>TEST</option><option value='12'>COLOR</option></select></td><td witdh='30%' align=center><div id='imagentexto\"+num+\"' width=100%><input type='text' id='texto\"+num+\"' size='30' disabled></div><br><br><table style='background-color:#fff;border:1px solid black;border-collapse:collapse' width=25% id='color\"+num+\"'><tr><td><br><br><br></td></tr></table></td><td witdh='35%'><table width=100%><tr><td width=45%>SPEED (%):</td><td width=10%><input type='text' id='tvelocidad\"+num+\"' size=2 value='100' onchange='actualizavalor(\\\"velocidad\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='velocidad\"+num+\"' value='100' min='0' max='200' onchange='actualizavalor(\\\"velocidad\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>LOOPS (N):</td><td width=10%><input type='text' id='tloops\"+num+\"' size=2 value='1' onchange='actualizavalor(\\\"loops\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='loops\"+num+\"' value='1' min='1' max='10' onchange='actualizavalor(\\\"loops\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>TOLERANCE (M):</td><td width=10%><input type='text' id='ttolerancia\"+num+\"' size=2 value='0' onchange='actualizavalor(\\\"tolerancia\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='tolerancia\"+num+\"' value='0' min='0' max='100' onchange='actualizavalor(\\\"tolerancia\\\",\"+num+");client.print(s);
-      s=F("\",1)' disabled></td></tr><tr><td width=45%>BRIGHTNESS (%):</td><td width=10%><input type='text' id='tbrillo\"+num+\"' size=2 value='50' onchange='actualizavalor(\\\"brillo\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='brillo\"+num+\"' value='50' min='0' max='100' onchange='actualizavalor(\\\"brillo\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>SATURATION (%):</td><td width=10%><input type='text' id='tsaturacion\"+num+\"' size=2 value='50' onchange='actualizavalor(\\\"saturacion\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='saturacion\"+num+\"' value='50' min='0' max='100' onchange='actualizavalor(\\\"saturacion\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>RED (0-255):</td><td width=10%><input type='text' id='trojo\"+num+\"' size=2 value='128' onchange='actualizavalor(\\\"rojo\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='rojo\"+num+\"' value='128' min='0' max='255' onchange='actualizavalor(\\\"rojo\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>GREEN (0-255):</td><td width=10%><input type='text' id='tverde\"+num+\"' size=2 value='128' onchange='actualizavalor(\\\"verde\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='verde\"+num+\"' value='128' min='0' max='255' onchange='actualizavalor(\\\"verde\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>BLUE (0-255):</td><td width=10%><input type='text' id='tazul\"+num+\"' size=2 value='128' onchange='actualizavalor(\\\"azul\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='azul\"+num+\"' value='128' min='0' max='255' onchange='actualizavalor(\\\"azul\\\",\"+num+\",1)' disabled></td></tr></table></td><td witdh='5%' onclick='eliminarefecto(\"+num+\")' valign='top' style='cursor:pointer;'><table style='background-color: lightgrey;'><tr><td style='background-color:white;font-family: Arial Rounded MT Bold'><b>&nbsp;X&nbsp;</b></td></tr></table></td></tr></table><div>\");\n\n\ndocument.getElementById(\"efecto");client.print(s);
-      s=F("s\").appendChild(codigo);\n\nactualizatamano();\nactualizavalor(\"verde\",num,1);\n}\n\n\nfunction establecevalor(dato,num,valor){\n\ndocument.getElementById(dato+num).value=valor;\ndocument.getElementById(\"t\"+dato+num).value=valor;\n\n}\n\nfunction deshabilita(dato,num,deshabilitar){\n\ndocument.getElementById(dato+num).disabled = deshabilitar;\ndocument.getElementById(\"t\"+dato+num).disabled = deshabilitar;\n\n}\n\nfunction activardesactivar(num){\n\nvar opcion=document.getElementById(\"seleccion\"+num).value;\n\nvar imagentexto = document.getElementById(\"imagentexto\"+num);\n\nvar imagen = document.getElementById(\"gifs\"+num);\nvar texto = document.getElementById(\"texto\"+num);\n\nif(imagen!=null){ imagentexto.removeChild(imagen); }\nif(texto!=null){ imagentexto.removeChild(texto); }\n\nif(opcion==0){\n\nvar input = document.createElement(\"input\");input.setAttribute(\"type\",\"text\");input.setAttribute(\"id\",\"texto\"+num);input.setAttribute(\"size\",\"30\");input.setAttribute(\"disabled\",\"\");\nimagentexto.appendChild(input);\n\ndeshabilita(\"velocidad\",num,true);\ndeshabilita(\"loops\",num,true);\ndeshabilita(\"tolerancia\",num,true);\ndeshabilita(\"brillo\",num,true);\ndeshabilita(\"saturacion\",num,true);\ndeshabilita(\"rojo\",num,true);\ndeshabilita(\"verde\",num,true);\ndeshabilita(\"azul\",num,true);\n\nestablecevalor(\"rojo\",num,255);\nestablecevalor(\"verde\",num,255);\nestablecevalor(\"azul\",num,255);\nactualizavalor(\"verde\",num,1);\n\n}else if(opcion==1){ //GIF\n\ncrearselecgifs(num);\n\ndeshabilita(\"velocidad\",num,false);\ndeshabilita(\"loops\",num,false);\ndeshabilita(\"tolerancia\",num,false);\ndeshabilita(\"brillo\",num,false);\ndeshabilita(\"saturacion\",num,false);\ndeshabilita(\"rojo\",num,true);\ndeshabilita(\"verde\",num,true);\ndeshabilita(\"azul\",num,true);\n\n}else if((opcion==2)||(opcion==3)||(opcion==4)||(opcion==5)){ //TEXTO , FECHA , HORA \n\nvar input = document.createElement('input');input.setAttribute('type',\"text\");input.setAttribute('id',\"texto\"+num);input.setAttribute('size',\"30\");\nimagentexto.appendChild(input);\n\ndeshabilita(\"velocidad\",num,false);");client.print(s);
-      s=F("\ndeshabilita(\"loops\",num,false);\ndeshabilita(\"brillo\",num,true);\ndeshabilita(\"saturacion\",num,true);\ndeshabilita(\"rojo\",num,false);\ndeshabilita(\"verde\",num,false);\ndeshabilita(\"azul\",num,false);\n\nif((opcion==3)||(opcion==4)){\n\ndeshabilita(\"tolerancia\",num,true);\n\nvar currentdate = new Date();\nvar datetime = \"(\" + currentdate.getDate() + \"/\" +(currentdate.getMonth()+1)+ \"/\" + currentdate.getFullYear() + \")(\" + currentdate.getHours() + \":\" + currentdate.getMinutes() + \":\" + currentdate.getSeconds()+\")\";\n\ndocument.getElementById(\"texto\"+num).value=datetime;\n\n\n}else if(opcion==5){\n\ndeshabilita(\"tolerancia\",num,false);\n\nestablecevalor(\"tolerancia\",num,50);\n\nestablecevalor(\"rojo\",num,0);\nestablecevalor(\"verde\",num,128);\nestablecevalor(\"azul\",num,0);\nactualizavalor(\"verde\",num,1);\n\n}\n\n}else if((opcion>=6)&&(opcion<=10)){\n\nvar input = document.createElement('input');input.setAttribute('type',\"text\");input.setAttribute('id',\"texto\"+num);input.setAttribute('size',\"30\");\nimagentexto.appendChild(input);\n\ndeshabilita(\"velocidad\",num,false);\ndeshabilita(\"loops\",num,false);\ndeshabilita(\"tolerancia\",num,false);\ndeshabilita(\"brillo\",num,false);\ndeshabilita(\"saturacion\",num,false);\ndeshabilita(\"rojo\",num,true);\ndeshabilita(\"verde\",num,true);\ndeshabilita(\"azul\",num,true);\n\n}else if((opcion>=11)&&(opcion<=12)){\n\nvar input = document.createElement('input');input.setAttribute('type',\"text\");input.setAttribute('id',\"texto\"+num);input.setAttribute('size',\"30\");\nimagentexto.appendChild(input);\n\ndeshabilita(\"velocidad\",num,false);\ndeshabilita(\"loops\",num,false);\ndeshabilita(\"tolerancia\",num,true);\ndeshabilita(\"brillo\",num,true);\ndeshabilita(\"saturacion\",num,true);\ndeshabilita(\"rojo\",num,false);\ndeshabilita(\"verde\",num,false);\ndeshabilita(\"azul\",num,false);\n}\n\n}\n\nfunction actualizavalor(dato,num,tipo){\nif(tipo==1){ document.getElementById(\"t\"+dato+num).value=document.getElementById(dato+num).value; }\nelse{ document.getElementById(dato+num).value=document.getElementById(\"t\"+dato+num).value; }");client.print(s);
-      s=F("\n\nif((dato==\"rojo\")||(dato==\"verde\")||(dato==\"azul\")){\ndocument.getElementById(\"color\"+num).style=\"background-color:rgb(\"+document.getElementById(\"rojo\"+num).value+\",\"+document.getElementById(\"verde\"+num).value+\",\"+document.getElementById(\"azul\"+num).value+\");border:1px solid black;border-collapse:collapse;\";\n}\n}\n\n\n\nfunction inicializa(){\n\nif(cadena==\"\"){\n\ncrearefecto(-1);\n\n}else{\n   \n   cadena=cadena.replace(\"%20\",\" \");\n   \n   var pos1=-1;\n       \n       pos1=cadena.indexOf(\"@\",pos1+1); if(pos1==-1) { crearefecto(-1); }\n\n       var pos2=cadena.indexOf(\";\",pos1+1);\n\n   var d=cadena.substring(pos1+1,pos2);\n\n       var numefectos=parseInt(d); \n   \n   pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n       var numpantalla=parseInt(d); \n\n   var transicion=0;\n   var tipo=0;\n   var ngifs=0;\n   var texto=\"\";\n   var velocidad=1;\n   var loops=1;\n   var tolerancia=0;\n   var brillo=0;\n   var saturacion=0;\n   var rojo=0;\n   var verde=0;\n   var azul=0;\n          \n       for(var i=0;i<numefectos;i++){\n\n  crearefecto(i);\n\n  if(i!=0) { \n pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n transicion=parseInt(d); \n  }\n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  tipo=parseInt(d); \n  \n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  ngifs=parseInt(d); \n  \n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  d.replace(\"%20\",\" \");texto=d; \n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  velocidad=parseInt(d); if(velocidad==0) { velocidad=1; }\n  \n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  loops=parseInt(d); \n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  tolerancia=parseInt(d); \n   \n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cad");client.print(s);
-      s=F("ena.substring(pos1+1,pos2);\n  brillo=parseInt(d); \n   \n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  saturacion=parseInt(d); \n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  rojo=parseInt(d); \n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  verde=parseInt(d); \n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  azul=parseInt(d);          \n  \n\n//  alert(transicion+\",\"+tipo+\",\"+ngifs+\",\"+texto+\",\"+velocidad+\",\"+loops+\",\"+tolerancia+\",\"+brillo+\",\"+saturacion+\",\"+rojo+\",\"+verde+\",\"+azul);\n\n\n  if(document.getElementById(\"transicion\"+i)!=null){ \ndocument.getElementById(\"transicion\"+i).value=transicion; \n  }\n\n  document.getElementById(\"seleccion\"+(i+1)).value=tipo; \n\n  activardesactivar(i+1);\n\n  if(document.getElementById(\"gifs\"+(i+1))!=null){\n  document.getElementById(\"gifs\"+(i+1)).value=ngifs;\n  }\n\n  if(document.getElementById(\"texto\"+(i+1))!=null){\n     document.getElementById(\"texto\"+(i+1)).value=texto;\n  }\n\n   document.getElementById(\"velocidad\"+(i+1)).value=velocidad;\n   document.getElementById(\"tvelocidad\"+(i+1)).value=velocidad;\n\n  document.getElementById(\"loops\"+(i+1)).value=loops;\n   document.getElementById(\"tloops\"+(i+1)).value=loops;\n\n  document.getElementById(\"tolerancia\"+(i+1)).value=tolerancia;\n   document.getElementById(\"ttolerancia\"+(i+1)).value=tolerancia;\n\n  document.getElementById(\"brillo\"+(i+1)).value=brillo;\n   document.getElementById(\"tbrillo\"+(i+1)).value=brillo;\n\n  document.getElementById(\"saturacion\"+(i+1)).value=saturacion;\n   document.getElementById(\"tsaturacion\"+(i+1)).value=saturacion;\n\n    document.getElementById(\"rojo\"+(i+1)).value=rojo;\n   document.getElementById(\"trojo\"+(i+1)).value=rojo;\n\n  document.getElementById(\"verde\"+(i+1)).value=verde;\n  document.getElementById(\"tverde");client.print(s);
-      s=F("\"+(i+1)).value=verde;\n  \n  document.getElementById(\"azul\"+(i+1)).value=azul;\n  document.getElementById(\"tazul\"+(i+1)).value=azul;\n\n  actualizavalor(\"azul\",(i+1),0);\n\n  transicion=0;\n  tipo=0;\n  ngifs=0;\n  texto=\"\";\n  velocidad=1;\n  loopss=1;\n  tolerancia=0;\n  brillo=0;\n  saturacion=0;\n  rojo=0;\n  verde=0;\n  azul=0;\n       }\n\n}\n\n}\n\n</script>\n<style>\nbody{\nbackground-image: linear-gradient(to right, #0799bf, #d5e7FF);\nfont-family: \"Courier New\", monospace;\n}\nh1{\n  border-radius:20px;\n  background-image: linear-gradient(to right,#6666FF,#5555FF);\n  color: #0000FF;\n  font-size:300%;\n}\n\n</style>\n\n</head>\n\n<body onload=\"inicializa();\">\n<center>\n\n<table><tbody><tr><td><h1>&nbsp;&nbsp;&nbsp;TLEDS&nbsp;&nbsp;<a href=\"http://192.168.4.1/config\" style=\"text-decoration:none;cursor:pointer;color:#0000FF;\">&#10049;</a><a href=\"http://192.168.4.1/gifs\" style=\"text-decoration:none;cursor:pointer;color:#0000FF;\">&#10064;</a>&nbsp;&nbsp;</h1></td></tr></tbody></table>\n\n<div id=\"efectos\"></div>\n\n<br><br>\n\n<table id=\"tablaplay\" width=\"83.33333333333333%\" align=\"center\"><tbody><tr>\n<td width=\"15%\"><br></td>\n<td width=\"10%\"><table width=\"100%\" style=\"border-radius:20px;background-color:#FAFAFF;cursor:pointer;\" onclick=\"crearefecto(-1)\"><tbody><tr align=\"center\"><td width=\"100%\" style=\"font-size:600%\">+</td><td></td></tr><tr></tr></tbody></table></td>\n<td width=\"5%\"><br></td>\n<td width=\"10%\"><table width=\"10%\" style=\"border-radius:20px;background-color:#FAFAFF;cursor:pointer;\" onclick=\"play(0)\"><tbody><tr align=\"center\"><td width=\"100%\" style=\"font-size:600%\">PLAY</td><td></td></tr><tr></tr></tbody></table></td>\n\n</tr></tbody></table>\n\n</center>\n\n\n\n\n\n</body></html>");client.print(s);
+      s=F("yle='font-size:170%;font-weight:bold;cursor:pointer;' onclick='play(\"+(num-1)+\")'>SCREEN \"+num+\"</td><td witdh='20%'><select id='seleccion\"+num+\"' onchange='activardesactivar(\"+num+\")' style='padding:5px;background:#edf2ff'><option value='0'></option><option value='1'>GIF PLAYER</option><option value='2'>TEXT</option><option value='3'>DATE</option><option value='4'>TIME</option><option value='5'>MATRIX</option><option value='6'>SPECTROMETER (M)</option><option value='7'>SPECTROMETER 2 (M)</option><option value='8'>RUN (M)</option><option value='9'>RUNM (M)</option><option value='10'>BATTLE (M)</option><option value='11'>PONG (M)</option><option value='12'>TEST</option><option value='13'>COLOR</option></select></td><td witdh='30%' align=center><div id='imagentexto\"+num+\"' width=100%><input type='text' id='texto\"+num+\"' size='30' disabled></div><br><br><table style='background-color:#fff;border:1px solid black;border-collapse:collapse' width=25% id='color\"+num+\"'><tr><td><br><br><br></td></tr></table></td><td witdh='35%'><table width=100%><tr><td width=45%>SPEED (%):</td><td width=10%><input type='text' id='tvelocidad\"+num+\"' size=2 value='100' onchange='actualizavalor(\\\"velocidad\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='velocidad\"+num+\"' value='100' min='0' max='200' onchange='actualizavalor(\\\"velocidad\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>LOOPS (N):</td><td width=10%><input type='text' id='tloops\"+num+\"' size=2 value='1' onchange='actualizavalor(\\\"loops\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='loops\"+num+\"' value='1' min='1' max='10' onchange='actualizavalor(\\\"loops\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>TOLERANCE (M):</td><td width=10%><input type='text' id='ttolerancia\"+num+\"' size=2 value='0' onchange='actualizavalor(\\\"tolerancia\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='tolerancia\"+num+\"' value='0' min='0' max='100' onchange='");client.print(s);
+      s=F("actualizavalor(\\\"tolerancia\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>BRIGHTNESS (%):</td><td width=10%><input type='text' id='tbrillo\"+num+\"' size=2 value='50' onchange='actualizavalor(\\\"brillo\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='brillo\"+num+\"' value='50' min='0' max='100' onchange='actualizavalor(\\\"brillo\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>SATURATION (%):</td><td width=10%><input type='text' id='tsaturacion\"+num+\"' size=2 value='50' onchange='actualizavalor(\\\"saturacion\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='saturacion\"+num+\"' value='50' min='0' max='100' onchange='actualizavalor(\\\"saturacion\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>RED (0-255):</td><td width=10%><input type='text' id='trojo\"+num+\"' size=2 value='128' onchange='actualizavalor(\\\"rojo\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='rojo\"+num+\"' value='128' min='0' max='255' onchange='actualizavalor(\\\"rojo\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>GREEN (0-255):</td><td width=10%><input type='text' id='tverde\"+num+\"' size=2 value='128' onchange='actualizavalor(\\\"verde\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='verde\"+num+\"' value='128' min='0' max='255' onchange='actualizavalor(\\\"verde\\\",\"+num+\",1)' disabled></td></tr><tr><td width=45%>BLUE (0-255):</td><td width=10%><input type='text' id='tazul\"+num+\"' size=2 value='128' onchange='actualizavalor(\\\"azul\\\",\"+num+\",0)' disabled></td><td width=45% align=center><input type='range' id='azul\"+num+\"' value='128' min='0' max='255' onchange='actualizavalor(\\\"azul\\\",\"+num+\",1)' disabled></td></tr></table></td><td witdh='5%' onclick='eliminarefecto(\"+num+\")' valign='top' style='cursor:pointer;'><table style='background-color: lightgrey;'><tr><td style='background-color:white;font-family: Arial Rounded MT Bold'><b>&nbsp;X&nbsp;</b></td></tr></table></td></tr></table><div>\"");client.print(s);
+      s=F(");\n\n\ndocument.getElementById(\"efectos\").appendChild(codigo);\n\nactualizatamano();\nactualizavalor(\"verde\",num,1);\n}\n\n\nfunction establecevalor(dato,num,valor){\n\ndocument.getElementById(dato+num).value=valor;\ndocument.getElementById(\"t\"+dato+num).value=valor;\n\n}\n\nfunction deshabilita(dato,num,deshabilitar){\n\ndocument.getElementById(dato+num).disabled = deshabilitar;\ndocument.getElementById(\"t\"+dato+num).disabled = deshabilitar;\n\n}\n\nfunction activardesactivar(num){\n\nvar opcion=document.getElementById(\"seleccion\"+num).value;\n\nvar imagentexto = document.getElementById(\"imagentexto\"+num);\n\nvar imagen = document.getElementById(\"gifs\"+num);\nvar texto = document.getElementById(\"texto\"+num);\n\nif(imagen!=null){ imagentexto.removeChild(imagen); }\nif(texto!=null){ imagentexto.removeChild(texto); }\n\nif(opcion==0){\n\nvar input = document.createElement(\"input\");input.setAttribute(\"type\",\"text\");input.setAttribute(\"id\",\"texto\"+num);input.setAttribute(\"size\",\"30\");input.setAttribute(\"disabled\",\"\");\nimagentexto.appendChild(input);\n\ndeshabilita(\"velocidad\",num,true);\ndeshabilita(\"loops\",num,true);\ndeshabilita(\"tolerancia\",num,true);\ndeshabilita(\"brillo\",num,true);\ndeshabilita(\"saturacion\",num,true);\ndeshabilita(\"rojo\",num,true);\ndeshabilita(\"verde\",num,true);\ndeshabilita(\"azul\",num,true);\n\nestablecevalor(\"rojo\",num,255);\nestablecevalor(\"verde\",num,255);\nestablecevalor(\"azul\",num,255);\nactualizavalor(\"verde\",num,1);\n\n}else if(opcion==1){ //GIF\n\ncrearselecgifs(num);\n\ndeshabilita(\"velocidad\",num,false);\ndeshabilita(\"loops\",num,false);\ndeshabilita(\"tolerancia\",num,false);\ndeshabilita(\"brillo\",num,false);\ndeshabilita(\"saturacion\",num,false);\ndeshabilita(\"rojo\",num,true);\ndeshabilita(\"verde\",num,true);\ndeshabilita(\"azul\",num,true);\n\n}else if((opcion==2)||(opcion==3)||(opcion==4)||(opcion==5)){ //TEXTO , FECHA , HORA \n\nvar input = document.createElement('input');input.setAttribute('type',\"text\");input.setAttribute('id',\"texto\"+num);input.setAttribute('size',\"30\");\nimagentexto.appendChild(input);\n");client.print(s);
+      s=F("\ndeshabilita(\"velocidad\",num,false);\ndeshabilita(\"loops\",num,false);\ndeshabilita(\"brillo\",num,true);\ndeshabilita(\"saturacion\",num,true);\ndeshabilita(\"rojo\",num,false);\ndeshabilita(\"verde\",num,false);\ndeshabilita(\"azul\",num,false);\n\nif((opcion==3)||(opcion==4)){\n\ndeshabilita(\"tolerancia\",num,true);\n\nvar currentdate = new Date();\nvar datetime = \"(\" + currentdate.getDate() + \"/\" +(currentdate.getMonth()+1)+ \"/\" + currentdate.getFullYear() + \")(\" + currentdate.getHours() + \":\" + currentdate.getMinutes() + \":\" + currentdate.getSeconds()+\")\";\n\ndocument.getElementById(\"texto\"+num).value=datetime;\n\n\n}else if(opcion==5){\n\ndeshabilita(\"tolerancia\",num,false);\n\nestablecevalor(\"tolerancia\",num,50);\n\nestablecevalor(\"rojo\",num,0);\nestablecevalor(\"verde\",num,128);\nestablecevalor(\"azul\",num,0);\nactualizavalor(\"verde\",num,1);\n\n}\n\n}else if((opcion>=6)&&(opcion<=11)){\n\nvar input = document.createElement('input');input.setAttribute('type',\"text\");input.setAttribute('id',\"texto\"+num);input.setAttribute('size',\"30\");\nimagentexto.appendChild(input);\n\ndeshabilita(\"velocidad\",num,false);\ndeshabilita(\"loops\",num,false);\ndeshabilita(\"tolerancia\",num,false);\ndeshabilita(\"brillo\",num,false);\ndeshabilita(\"saturacion\",num,false);\ndeshabilita(\"rojo\",num,true);\ndeshabilita(\"verde\",num,true);\ndeshabilita(\"azul\",num,true);\n\n}else if((opcion>=12)&&(opcion<=13)){\n\nvar input = document.createElement('input');input.setAttribute('type',\"text\");input.setAttribute('id',\"texto\"+num);input.setAttribute('size',\"30\");\nimagentexto.appendChild(input);\n\ndeshabilita(\"velocidad\",num,false);\ndeshabilita(\"loops\",num,false);\ndeshabilita(\"tolerancia\",num,true);\ndeshabilita(\"brillo\",num,true);\ndeshabilita(\"saturacion\",num,true);\ndeshabilita(\"rojo\",num,false);\ndeshabilita(\"verde\",num,false);\ndeshabilita(\"azul\",num,false);\n}\n\n}\n\nfunction actualizavalor(dato,num,tipo){\nif(tipo==1){ document.getElementById(\"t\"+dato+num).value=document.getElementById(dato+num).value; }\nelse{ document.getElementById(dato+num).value=document.g");client.print(s);
+      s=F("etElementById(\"t\"+dato+num).value; }\n\nif((dato==\"rojo\")||(dato==\"verde\")||(dato==\"azul\")){\ndocument.getElementById(\"color\"+num).style=\"background-color:rgb(\"+document.getElementById(\"rojo\"+num).value+\",\"+document.getElementById(\"verde\"+num).value+\",\"+document.getElementById(\"azul\"+num).value+\");border:1px solid black;border-collapse:collapse;\";\n}\n}\n\n\n\nfunction inicializa(){\n\nif(cadena==\"\"){\n\ncrearefecto(-1);\n\n}else{\n   \n   cadena=cadena.replace(\"%20\",\" \");\n   \n   var pos1=-1;\n       \n       pos1=cadena.indexOf(\"@\",pos1+1); if(pos1==-1) { crearefecto(-1); }\n\n       var pos2=cadena.indexOf(\";\",pos1+1);\n\n   var d=cadena.substring(pos1+1,pos2);\n\n       var numefectos=parseInt(d); \n   \n   pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n       var numpantalla=parseInt(d); \n\n   var transicion=0;\n   var tipo=0;\n   var ngifs=0;\n   var texto=\"\";\n   var velocidad=1;\n   var loops=1;\n   var tolerancia=0;\n   var brillo=0;\n   var saturacion=0;\n   var rojo=0;\n   var verde=0;\n   var azul=0;\n          \n       for(var i=0;i<numefectos;i++){\n\n  crearefecto(i);\n\n  if(i!=0) { \n pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n transicion=parseInt(d); \n  }\n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  tipo=parseInt(d); \n  \n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  ngifs=parseInt(d); \n  \n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  d.replace(\"%20\",\" \");texto=d; \n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  velocidad=parseInt(d); if(velocidad==0) { velocidad=1; }\n  \n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  loops=parseInt(d); \n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  tolerancia=parseInt(d); \n   \n  pos1=pos2;pos");client.print(s);
+      s=F("2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  brillo=parseInt(d); \n   \n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  saturacion=parseInt(d); \n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  rojo=parseInt(d); \n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  verde=parseInt(d); \n\n  pos1=pos2;pos2=cadena.indexOf(\";\",pos1+1);d = cadena.substring(pos1+1,pos2);\n  azul=parseInt(d);          \n  \n\n//  alert(transicion+\",\"+tipo+\",\"+ngifs+\",\"+texto+\",\"+velocidad+\",\"+loops+\",\"+tolerancia+\",\"+brillo+\",\"+saturacion+\",\"+rojo+\",\"+verde+\",\"+azul);\n\n\n  if(document.getElementById(\"transicion\"+i)!=null){ \ndocument.getElementById(\"transicion\"+i).value=transicion; \n  }\n\n  document.getElementById(\"seleccion\"+(i+1)).value=tipo; \n\n  activardesactivar(i+1);\n\n  if(document.getElementById(\"gifs\"+(i+1))!=null){\n  document.getElementById(\"gifs\"+(i+1)).value=ngifs;\n  }\n\n  if(document.getElementById(\"texto\"+(i+1))!=null){\n     document.getElementById(\"texto\"+(i+1)).value=texto;\n  }\n\n   document.getElementById(\"velocidad\"+(i+1)).value=velocidad;\n   document.getElementById(\"tvelocidad\"+(i+1)).value=velocidad;\n\n  document.getElementById(\"loops\"+(i+1)).value=loops;\n   document.getElementById(\"tloops\"+(i+1)).value=loops;\n\n  document.getElementById(\"tolerancia\"+(i+1)).value=tolerancia;\n   document.getElementById(\"ttolerancia\"+(i+1)).value=tolerancia;\n\n  document.getElementById(\"brillo\"+(i+1)).value=brillo;\n   document.getElementById(\"tbrillo\"+(i+1)).value=brillo;\n\n  document.getElementById(\"saturacion\"+(i+1)).value=saturacion;\n   document.getElementById(\"tsaturacion\"+(i+1)).value=saturacion;\n\n    document.getElementById(\"rojo\"+(i+1)).value=rojo;\n   document.getElementById(\"trojo\"+(i+1)).value=rojo;\n\n  document.getElementById(\"verde\"+(i+1)).value=verde;\n");client.print(s);
+      s=F("  document.getElementById(\"tverde\"+(i+1)).value=verde;\n  \n  document.getElementById(\"azul\"+(i+1)).value=azul;\n  document.getElementById(\"tazul\"+(i+1)).value=azul;\n\n  actualizavalor(\"azul\",(i+1),0);\n\n  transicion=0;\n  tipo=0;\n  ngifs=0;\n  texto=\"\";\n  velocidad=1;\n  loopss=1;\n  tolerancia=0;\n  brillo=0;\n  saturacion=0;\n  rojo=0;\n  verde=0;\n  azul=0;\n       }\n\n}\n\n}\n\n</script>\n<style>\nbody{\nbackground-image: linear-gradient(to right, #0799bf, #d5e7FF);\nfont-family: \"Courier New\", monospace;\n}\nh1{\n  border-radius:20px;\n  background-image: linear-gradient(to right,#6666FF,#5555FF);\n  color: #0000FF;\n  font-size:300%;\n}\n\n</style>\n\n</head>\n\n<body onload=\"inicializa();\">\n<center>\n\n<table><tbody><tr><td><h1>&nbsp;&nbsp;&nbsp;TLEDS&nbsp;&nbsp;<a href=\"http://192.168.4.1/config\" style=\"text-decoration:none;cursor:pointer;color:#0000FF;\">&#10049;</a><a href=\"http://192.168.4.1/gifs\" style=\"text-decoration:none;cursor:pointer;color:#0000FF;\">&#10064;</a>&nbsp;&nbsp;</h1></td></tr></tbody></table>\n\n<div id=\"efectos\"></div>\n\n<br><br>\n\n<table id=\"tablaplay\" width=\"83.33333333333333%\" align=\"center\"><tbody><tr>\n<td width=\"15%\"><br></td>\n<td width=\"10%\"><table width=\"100%\" style=\"border-radius:20px;background-color:#FAFAFF;cursor:pointer;\" onclick=\"crearefecto(-1)\"><tbody><tr align=\"center\"><td width=\"100%\" style=\"font-size:600%\">+</td><td></td></tr><tr></tr></tbody></table></td>\n<td width=\"5%\"><br></td>\n<td width=\"10%\"><table width=\"10%\" style=\"border-radius:20px;background-color:#FAFAFF;cursor:pointer;\" onclick=\"play(0)\"><tbody><tr align=\"center\"><td width=\"100%\" style=\"font-size:600%\">PLAY</td><td></td></tr><tr></tr></tbody></table></td>\n\n</tr></tbody></table>\n\n</center>\n\n\n\n\n\n</body></html>");client.print(s);
       s=F("");
 
 
@@ -1994,7 +2155,7 @@ void clienteweb(){
       Serial.print("Nombre Archivo : ");
       Serial.println(nombrearchivo);         
 
-      String dirarchivo="/gif/";
+      String dirarchivo="/";
       dirarchivo+=nombrearchivo;
       
       File archivo;
@@ -2622,10 +2783,14 @@ void loop(){
 
   if(tipo[numpantalla]==1) { //GIFs
   
-      String archivos=carpeta;archivos+="/";archivos+=gifs[ngifs[numpantalla]];
-      //Serial.println(archivos);
+      String archivo="";
+      if(gifs[ngifs[numpantalla]].indexOf("/")==-1){ archivo+="/"; }
+
+      archivo+=gifs[ngifs[numpantalla]];
+      
+      //Serial.println(archivo);
     
-      const char * fileName = archivos.c_str();
+      const char * fileName = archivo.c_str();
       
       int loops = loopss[numpantalla]; // max loops
       int durationControl = maxLoopsDuration; // force break loop after xxx ms
@@ -2699,11 +2864,15 @@ void loop(){
 
       battle();
     
-  }else if(tipo[numpantalla]==11) { //TEST
+  }else if(tipo[numpantalla]==11) { //PONG (M)
+
+      pong();
+    
+  }else if(tipo[numpantalla]==12) { //TEST
 
       test();
     
-  }else if(tipo[numpantalla]==12) { //COLOR
+  }else if(tipo[numpantalla]==13) { //COLOR
 
       colorescena();  
     
