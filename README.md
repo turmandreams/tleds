@@ -1,9 +1,19 @@
+INFORMATION
+----------------------
+
+TLEDS is a firmware designed for ESP32 devices, to control WS2812b LED arrays. It is specially designed to facilitate the representation of animated GIFS.
+
+
+
 TLEDS WEB INSTALLER
 ----------------------
 
 You can install on the ESP32 directly from the website :
 
 https://www.turmandreams.es/tleds/
+
+
+
 
 
 
